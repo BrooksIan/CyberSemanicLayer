@@ -55,6 +55,14 @@ A Reprise walkthrough is not recorded yet. Leave `reprise_link` empty in [`METAD
 
 Locally, the walkthrough is the browse application. Ask one of the example questions and compare the guessed walk with the Ossie path.
 
+**Which hosts can jdoe reach?** The guessed walk includes both sessions and Prod-DB-01. Ossie keeps the password-reset path.
+
+![Which hosts can jdoe reach, compared with and without Ossie](images/Example_HostUserJDOECanReach.png)
+
+**Who can read PCI-Database?** A host walk returns no path. Ossie follows group access to the critical asset.
+
+![Who can read PCI-Database, compared with and without Ossie](images/Example_WhoCanReadPCIDB.png)
+
 ## Use Case
 
 Security data is easy to collect and hard to query with a stable meaning. A variable-length walk will treat a logon, a session, and a password-reset right as the same kind of reach. This blueprint keeps one graph and one set of bindings so detections, dashboards, and agents can ask the same question and get the path the question names.

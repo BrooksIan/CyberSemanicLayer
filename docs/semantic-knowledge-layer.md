@@ -79,6 +79,8 @@ Reach means a password-reset right that lands on a host through group membership
 
 Workstation-01 and JumpServer-02 are sessions, so they leave the Ossie answer.
 
+![Which hosts can jdoe reach, compared with and without Ossie](../images/Example_HostUserJDOECanReach.png)
+
 ### Lateral movement
 
 Prompt: **Who is on Workstation-01?**
@@ -104,6 +106,8 @@ Read means group access to the critical asset. PCI-Database is a `CriticalAsset`
 | Ossie | admin_user, break_glass, service_account_aws |
 
 `service_account_aws` reaches the asset because AWS-Admin-Role has `HAS_ACCESS_TO` PCI-Database. `admin_user` and `break_glass` reach it because Domain Admins can open Prod-DB-01, and that host `HOSTS` the asset. jdoe's password-reset path is a reach path, so it stays on the shadow-admin question.
+
+![Who can read PCI-Database, compared with and without Ossie](../images/Example_WhoCanReadPCIDB.png)
 
 ### Group membership
 

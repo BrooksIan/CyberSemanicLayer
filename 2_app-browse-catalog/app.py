@@ -143,6 +143,17 @@ def render_legend(kinds: list[str]) -> str:
     return '<p class="legend">' + "".join(chips) + "</p>"
 
 
+def _relationship_lines(label: str) -> tuple[str, ...]:
+    if " (" in label and label.endswith(")"):
+        name, detail = label.split(" (", 1)
+        return (name, detail[:-1])
+    return (label,)
+
+
+def _label_width(text: str) -> int:
+    return int(len(text) * 8.2) + 18
+
+
 def render_graph(graph, marker_id: str) -> str:
     from cyber_semantic_layer.neo4j_graph import GraphView
 
@@ -159,19 +170,30 @@ def render_graph(graph, marker_id: str) -> str:
         columns.setdefault(depth[name], []).append(name)
     for column in columns.values():
         column.sort()
-    node_w, node_h, gap_x, gap_y, pad = 156, 40, 56, 36, 24
+    label_lines = {
+        (source, label, target): _relationship_lines(label)
+        for source, label, target in graph.edges
+    }
+    chip_widths = [
+        max(_label_width(line) for line in lines) for lines in label_lines.values()
+    ]
+    node_w, node_h, gap_y = 156, 40, 48
+    gap_x = max([96, *chip_widths]) + 20
+    pad_x, pad_y = 24, 28
     positions: dict[str, tuple[int, int]] = {}
     max_depth = max(columns)
     max_rows = max(len(column) for column in columns.values())
     for column_index, column_names in columns.items():
         for row_index, name in enumerate(column_names):
-            x = pad + column_index * (node_w + gap_x)
-            y = pad + row_index * (node_h + gap_y)
+            x = pad_x + column_index * (node_w + gap_x)
+            y = pad_y + row_index * (node_h + gap_y)
             positions[name] = (x, y)
-    width = pad * 2 + (max_depth + 1) * node_w + max_depth * gap_x
-    height = pad * 2 + max_rows * node_h + max(0, max_rows - 1) * gap_y
+    width = pad_x * 2 + (max_depth + 1) * node_w + max_depth * gap_x
+    height = pad_y * 2 + max_rows * node_h + max(0, max_rows - 1) * gap_y
     kinds = dict(graph.nodes)
     edge_markup = []
+    label_markup = []
+    placed: list[tuple[float, float, float, float]] = []
     for source, label, target in graph.edges:
         if source not in positions or target not in positions:
             continue
@@ -179,12 +201,60 @@ def render_graph(graph, marker_id: str) -> str:
         x2, y2 = positions[target]
         start_x, start_y = x1 + node_w, y1 + node_h / 2
         end_x, end_y = x2, y2 + node_h / 2
-        mid_x, mid_y = (start_x + end_x) / 2, (start_y + end_y) / 2 - 8
         edge_markup.append(
             f'<line x1="{start_x}" y1="{start_y}" x2="{end_x - 8}" y2="{end_y}" '
             f'marker-end="url(#{marker_id})" stroke="#666" />'
-            f'<text x="{mid_x}" y="{mid_y}" text-anchor="middle" font-size="11" fill="#333">'
-            f"{html.escape(label)}</text>"
+        )
+        lines = label_lines[(source, label, target)]
+        chip_w = max(_label_width(line) for line in lines)
+        chip_h = 16 * len(lines) + 6
+        if end_x > start_x:
+            center_x = start_x + gap_x / 2
+            span = end_x - start_x
+            along = min(max((center_x - start_x) / span, 0), 1)
+            center_y = start_y + along * (end_y - start_y)
+        else:
+            center_x = (start_x + end_x) / 2
+            center_y = min(start_y, end_y) - chip_h
+        left = center_x - chip_w / 2
+        top = center_y - chip_h - 4
+        margin = 10
+
+        def blocked(candidate: float) -> bool:
+            return any(
+                left < other_right + margin
+                and left + chip_w > other_left - margin
+                and candidate < other_bottom + margin
+                and candidate + chip_h > other_top - margin
+                for other_left, other_top, other_right, other_bottom in placed
+            )
+
+        if blocked(top):
+            up = top
+            down = top
+            for _nudge in range(8):
+                up -= chip_h + margin
+                down += chip_h + margin
+                if up >= 8 and not blocked(up):
+                    top = up
+                    break
+                if not blocked(down):
+                    top = down
+                    break
+            else:
+                top = down
+        placed.append((left, top, left + chip_w, top + chip_h))
+        text_rows = []
+        for index, line in enumerate(lines):
+            text_y = top + 15 + index * 16
+            text_rows.append(
+                f'<text x="{center_x}" y="{text_y}" text-anchor="middle" font-size="12" '
+                f'font-weight="600" fill="#120046">{html.escape(line)}</text>'
+            )
+        label_markup.append(
+            f'<rect x="{left}" y="{top}" width="{chip_w}" height="{chip_h}" rx="4" '
+            f'fill="#ffffff" stroke="#e4e0ee" />'
+            + "".join(text_rows)
         )
     node_markup = []
     for name, (x, y) in positions.items():
@@ -198,14 +268,25 @@ def render_graph(graph, marker_id: str) -> str:
             f"{html.escape(kinds[name])}</text>"
         )
     label = "; ".join(f"{source} {rel} {target}" for source, rel, target in graph.edges)
+    shift = 0
+    if placed:
+        min_top = min(box[1] for box in placed)
+        if min_top < 8:
+            shift = 8 - min_top
+        max_bottom = max(box[3] for box in placed) + shift
+        if max_bottom > height - 8:
+            height = int(max_bottom + 8)
     return (
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
+        f'viewBox="0 0 {width} {height}" '
         f'role="img" aria-label="{html.escape(label)}">'
         f'<defs><marker id="{marker_id}" markerWidth="8" markerHeight="8" refX="8" refY="3" orient="auto">'
         f'<path d="M0,0 L8,3 L0,6 Z" fill="#666" /></marker></defs>'
+        f'<g transform="translate(0 {shift})">'
         + "".join(edge_markup)
         + "".join(node_markup)
-        + "</svg>"
+        + "".join(label_markup)
+        + "</g></svg>"
     )
 
 
@@ -254,7 +335,7 @@ def render_answer(submitted: str, question, result, status: str) -> str:
   <div><p>With Ossie</p>{with_graph}</div>
 </div>
 <p>{status} Matched {title}: {prompt}</p>
-<table>
+<table class="compare">
   <thead><tr><th></th><th>Without Ossie</th><th>With Ossie</th></tr></thead>
   <tbody>
     <tr>
@@ -315,9 +396,11 @@ def render_posture(rows, status: str) -> str:
             f"<p class=\"status\">{html.escape(status)}</p></section>"
         )
     body_rows = "\n".join(
-        "<tr><td>{title}</td><td>{prompt}<br><em>How Ossie helped:</em> {help}</td>"
-        "<td><code>{without_cypher}</code><br>{without_names}</td>"
-        "<td><code>{with_cypher}</code><br>{with_names}</td></tr>".format(
+        "<tr><td rowspan=\"2\">{title}</td>"
+        "<td rowspan=\"2\">{prompt}<br><em>How Ossie helped:</em> {help}</td>"
+        "<td><code>{without_cypher}</code></td>"
+        "<td><code>{with_cypher}</code></td></tr>"
+        "<tr><td>{without_names}</td><td>{with_names}</td></tr>".format(
             title=html.escape(row.question.title),
             prompt=html.escape(row.question.prompt),
             help=html.escape(ossie_help(row.question)),
@@ -331,7 +414,7 @@ def render_posture(rows, status: str) -> str:
     return f"""<section class="panel">
 <h2>Posture on Neo4j</h2>
 <p class="status">{html.escape(status)}</p>
-<table>
+<table class="posture">
   <thead><tr><th>Question</th><th>Ask</th><th>Without Ossie</th><th>With Ossie</th></tr></thead>
   <tbody>
     {body_rows}
@@ -474,14 +557,26 @@ def render_catalog(catalog: SemanticCatalog, notice: str, posture_html: str = ""
     }}
     table {{
       width: 100%;
+      table-layout: fixed;
       border-collapse: collapse;
       margin: 0.5rem 0 0;
+    }}
+    .compare th:first-child,
+    .compare td:first-child {{
+      width: 6.5rem;
+    }}
+    .posture th:nth-child(1) {{ width: 16%; }}
+    .posture th:nth-child(2) {{ width: 28%; }}
+    .posture tbody tr:nth-child(odd) td:nth-child(n+3) {{
+      border-bottom: 0;
+      padding-bottom: 0.35rem;
     }}
     th, td {{
       border-bottom: 1px solid var(--line);
       padding: 0.7rem 0.75rem;
       text-align: left;
       vertical-align: top;
+      overflow-wrap: break-word;
     }}
     th {{
       background: var(--indigo);
@@ -492,6 +587,7 @@ def render_catalog(catalog: SemanticCatalog, notice: str, posture_html: str = ""
     code {{
       display: block;
       white-space: pre-wrap;
+      overflow-wrap: anywhere;
       background: var(--indigo);
       color: #fff;
       border-radius: 8px;
@@ -519,7 +615,12 @@ def render_catalog(catalog: SemanticCatalog, notice: str, posture_html: str = ""
       text-transform: uppercase;
     }}
     .graphs > div:last-child > p {{ color: var(--orange); }}
-    .graphs svg {{ background: #fff; border-radius: 8px; }}
+    .graphs svg {{
+      background: #fff;
+      border-radius: 8px;
+      max-width: 100%;
+      height: auto;
+    }}
     .legend {{ display: flex; gap: 0.5rem; flex-wrap: wrap; }}
     .swatch {{
       border: 1px solid;
@@ -531,7 +632,8 @@ def render_catalog(catalog: SemanticCatalog, notice: str, posture_html: str = ""
     @media (max-width: 720px) {{
       header h1 {{ font-size: 1.8rem; }}
       .panel {{ padding: 1rem; }}
-      table {{ display: block; overflow-x: auto; }}
+      .posture th:nth-child(1) {{ width: 22%; }}
+      .posture th:nth-child(2) {{ width: 28%; }}
     }}
   </style>
 </head>
