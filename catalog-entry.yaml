@@ -28,7 +28,8 @@ entries:
       <p>This prototype installs a semantic knowledge layer in Cloudera Machine
       Learning, seeds a Neo4j posture graph, and compares each question with
       a guessed walk and with the Ossie bindings.</p>
-    image_path: ""
+    image_path: >-
+      https://raw.githubusercontent.com/BrooksIan/CyberSemanicLayer/main/images/cover.jpg
     tags:
       - cybersecurity
       - semantic-layer
