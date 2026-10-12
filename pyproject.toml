@@ -6,6 +6,7 @@ readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{ name = "Ian Brooks" }]
+keywords = ["cybersecurity", "semantic-layer", "posture", "graph", "neo4j", "ossie", "identity"]
 requires-python = ">=3.11"
 dependencies = ["neo4j>=5"]
 

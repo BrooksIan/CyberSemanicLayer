@@ -37,6 +37,11 @@ target_vertical: ""
 tags:
   - cybersecurity
   - semantic-layer
+  - posture
+  - graph
+  - neo4j
+  - ossie
+  - identity
   - detection
   - catalog
 

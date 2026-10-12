@@ -32,7 +32,13 @@ entries:
     tags:
       - cybersecurity
       - semantic-layer
+      - posture
+      - graph
+      - neo4j
+      - ossie
+      - identity
       - detection
+      - catalog
     git_url: ""
     is_prototype: true
     is_community: true
