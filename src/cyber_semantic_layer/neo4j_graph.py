@@ -342,11 +342,43 @@ def graph_from_paths(paths) -> GraphView:
     return GraphView(nodes=ordered, edges=tuple(edges))
 
 
+def _merge_graphs(base: GraphView, extra: GraphView) -> GraphView:
+    nodes = dict(base.nodes)
+    for name, kind in extra.nodes:
+        nodes.setdefault(name, kind)
+    edges = list(base.edges)
+    seen = set(edges)
+    for edge in extra.edges:
+        if edge not in seen:
+            seen.add(edge)
+            edges.append(edge)
+    ordered = tuple((name, nodes[name]) for name in sorted(nodes))
+    return GraphView(nodes=ordered, edges=tuple(edges))
+
+
+def _attach_vulnerabilities(session, graph: GraphView) -> GraphView:
+    hosts = [name for name, kind in graph.nodes if kind == "Host"]
+    if not hosts:
+        return graph
+    paths = [
+        record["path"]
+        for record in session.run(
+            "MATCH path = (v:Vulnerability {demo: $demo})-[:VULNERABILITY_ON_ASSET]->(h:Host) "
+            "WHERE h.name IN $hosts RETURN path",
+            demo=DEMO_TAG,
+            hosts=hosts,
+        )
+    ]
+    if not paths:
+        return graph
+    return _merge_graphs(graph, graph_from_paths(paths))
+
+
 def _collect_graph(session, statements: tuple[str, ...]) -> GraphView:
     paths = []
     for statement in statements:
         paths.extend(record["path"] for record in session.run(statement))
-    return graph_from_paths(paths)
+    return _attach_vulnerabilities(session, graph_from_paths(paths))
 
 
 @dataclass(frozen=True)

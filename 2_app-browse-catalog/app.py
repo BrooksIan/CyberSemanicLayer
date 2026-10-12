@@ -163,8 +163,11 @@ def render_graph(graph, marker_id: str) -> str:
     depth = {name: 0 for name in names}
     for _name in names:
         for source, _label, target in graph.edges:
-            if source in depth and target in depth:
+            if source in depth and target in depth and _label != "VULNERABILITY_ON_ASSET":
                 depth[target] = max(depth[target], depth[source] + 1)
+    for source, label, target in graph.edges:
+        if label == "VULNERABILITY_ON_ASSET" and target in depth:
+            depth[source] = depth[target]
     columns: dict[int, list[str]] = {}
     for name in names:
         columns.setdefault(depth[name], []).append(name)
@@ -189,6 +192,16 @@ def render_graph(graph, marker_id: str) -> str:
             y = pad_y + row_index * (node_h + gap_y)
             positions[name] = (x, y)
     width = pad_x * 2 + (max_depth + 1) * node_w + max_depth * gap_x
+    vuln_label = max(
+        (
+            max(_label_width(line) for line in lines)
+            for (source, label, target), lines in label_lines.items()
+            if label == "VULNERABILITY_ON_ASSET"
+        ),
+        default=0,
+    )
+    if vuln_label:
+        width += vuln_label + 28
     height = pad_y * 2 + max_rows * node_h + max(0, max_rows - 1) * gap_y
     kinds = dict(graph.nodes)
     edge_markup = []
@@ -199,16 +212,33 @@ def render_graph(graph, marker_id: str) -> str:
             continue
         x1, y1 = positions[source]
         x2, y2 = positions[target]
-        start_x, start_y = x1 + node_w, y1 + node_h / 2
-        end_x, end_y = x2, y2 + node_h / 2
-        edge_markup.append(
-            f'<line x1="{start_x}" y1="{start_y}" x2="{end_x - 8}" y2="{end_y}" '
-            f'marker-end="url(#{marker_id})" stroke="#666" />'
-        )
+        if abs(x1 - x2) < 1:
+            start_x = x1 + node_w / 2
+            end_x = x2 + node_w / 2
+            if y1 <= y2:
+                start_y = y1 + node_h
+                end_y = y2
+            else:
+                start_y = y1
+                end_y = y2 + node_h
+            edge_markup.append(
+                f'<line x1="{start_x}" y1="{start_y}" x2="{end_x}" y2="{end_y - 8 if y1 <= y2 else end_y + 8}" '
+                f'marker-end="url(#{marker_id})" stroke="#666" />'
+            )
+        else:
+            start_x, start_y = x1 + node_w, y1 + node_h / 2
+            end_x, end_y = x2, y2 + node_h / 2
+            edge_markup.append(
+                f'<line x1="{start_x}" y1="{start_y}" x2="{end_x - 8}" y2="{end_y}" '
+                f'marker-end="url(#{marker_id})" stroke="#666" />'
+            )
         lines = label_lines[(source, label, target)]
         chip_w = max(_label_width(line) for line in lines)
         chip_h = 16 * len(lines) + 6
-        if end_x > start_x:
+        if abs(x1 - x2) < 1:
+            center_x = start_x + 12 + chip_w / 2
+            center_y = (start_y + end_y) / 2
+        elif end_x > start_x:
             center_x = start_x + gap_x / 2
             span = end_x - start_x
             along = min(max((center_x - start_x) / span, 0), 1)
