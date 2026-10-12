@@ -1,0 +1,25 @@
+name: Community
+
+entries:
+  - title: Cyber Semantic Layer
+    label: cyber-semantic-layer
+    short_description: |
+      Semantic knowledge layer for cybersecurity posture questions.
+    long_description: |
+      This prototype installs a semantic knowledge layer in Cloudera Machine
+      Learning, seeds a Neo4j posture graph, and compares each question with
+      a guessed walk and with the Ossie bindings. The build job also writes
+      a catalog snapshot of entities, relationships, and metrics.
+    long_description_html: |
+      <p>This prototype installs a semantic knowledge layer in Cloudera Machine
+      Learning, seeds a Neo4j posture graph, and compares each question with
+      a guessed walk and with the Ossie bindings.</p>
+    image_path: ""
+    tags:
+      - cybersecurity
+      - semantic-layer
+      - detection
+    git_url: ""
+    is_prototype: true
+    is_community: true
+    is_new: true

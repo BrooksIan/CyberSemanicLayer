@@ -1,0 +1,46 @@
+# Catalog metadata for the Cloudera blueprint website.
+# Set maintainer_name, public_github_link, and reprise_link before publishing.
+
+# --- Identity ---
+name: "Cyber Semantic Layer"
+slug: "cyber-semantic-layer"
+description: "A semantic knowledge layer that binds cybersecurity posture questions to a shared graph of users, groups, hosts, and assets."
+reprise_link: ""
+
+# --- Classification (website filters) ---
+catalog_classification:
+  - Launchable (AMP)
+  - Developer Example
+launchable: true
+lifecycle_status: Active
+
+# --- Industry & alignment ---
+industry: General
+industry_alignment: "Horizontal"
+target_vertical: ""
+
+# --- Tags (website search & browse) ---
+tags:
+  - cybersecurity
+  - semantic-layer
+  - detection
+  - catalog
+
+# --- Relationships ---
+product_mapping:
+  - Cloudera Machine Learning
+
+# --- Provenance ---
+publisher: ""
+source: Internal
+
+# --- Repository & assets ---
+public_github_link: ""
+
+# --- Ownership ---
+maintainer_name: ""
+
+# --- Dates ---
+date_created: "2026-10-12"
+date_updated: "2026-10-12"
+published_date: ""

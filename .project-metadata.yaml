@@ -1,0 +1,69 @@
+name: Cyber Semantic Layer
+description: >
+  Bind cybersecurity posture questions to a semantic knowledge layer, compare
+  each answer with a guessed graph walk, and write a catalog snapshot in
+  Cloudera Machine Learning.
+author: ""
+specification_version: 1.0
+prototype_version: 1.0
+date: "2026-10-12"
+
+environment_variables:
+  CATALOG_PATH:
+    default: "assets/data/catalog.json"
+    description: "Project-relative path where the catalog job writes the semantic layer snapshot."
+    required: false
+  NEO4J_URI:
+    default: "bolt://localhost:7687"
+    description: "Bolt URI for the Neo4j graph. The catalog job seeds the shadow-admin demo subgraph when this is set."
+    required: false
+  NEO4J_USER:
+    default: "neo4j"
+    description: "Neo4j user."
+    required: false
+  NEO4J_PASSWORD:
+    default: "cyber-semantic-layer"
+    description: "Neo4j password. Replace this outside the local demo."
+    required: false
+
+runtimes:
+  - editor: Workbench
+    kernel: Python 3.11
+    edition: Standard
+
+tasks:
+  - type: run_session
+    name: Install Dependencies
+    script: 0_session-install-dependencies/install-dependencies.py
+    short_summary: Install the semantic layer package.
+    kernel: python3
+    cpu: 1
+    memory: 2
+
+  - type: create_job
+    name: Build semantic catalog
+    entity_label: build_semantic_catalog
+    script: 1_job-build-catalog/job.py
+    arguments: None
+    cpu: 1
+    memory: 2
+    short_summary: Create the job that writes the catalog snapshot and seeds Neo4j.
+    environment:
+      TASK_TYPE: CREATE/RUN_JOB
+
+  - type: run_job
+    entity_label: build_semantic_catalog
+    short_summary: Write the catalog snapshot to CATALOG_PATH and seed the shadow-admin graph.
+
+  - type: start_application
+    name: Ask posture questions
+    short_summary: Ask posture questions and compare the guessed walk with Ossie.
+    long_summary: >
+      Matches a question to the semantic knowledge layer and runs it against
+      the Neo4j graph seeded by the build job.
+    subdomain: cyber-semantic-layer
+    script: 2_app-browse-catalog/app.py
+    cpu: 1
+    memory: 2
+    environment_variables:
+      TASK_TYPE: START_APPLICATION

@@ -1,0 +1,20 @@
+[project]
+name = "cyber-semantic-layer"
+version = "0.1.0"
+description = "Semantic knowledge layer for cybersecurity posture: question bindings, a Neo4j demo graph, and a catalog of entities, relationships, and metrics."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["neo4j>=5"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
