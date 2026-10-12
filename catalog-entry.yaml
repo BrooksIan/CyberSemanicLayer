@@ -39,7 +39,7 @@ entries:
       - identity
       - detection
       - catalog
-    git_url: ""
+    git_url: "https://github.com/BrooksIan/CyberSemanicLayer.git"
     is_prototype: true
     is_community: true
     is_new: true
