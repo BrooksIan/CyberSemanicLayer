@@ -1,6 +1,14 @@
 # Cloudera Blueprint: Cyber Semantic Layer
 
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB)](https://www.python.org/downloads/)
+[![Stars](https://img.shields.io/github/stars/BrooksIan/CyberSemanicLayer)](https://github.com/BrooksIan/CyberSemanicLayer/stargazers)
+[![Forks](https://img.shields.io/github/forks/BrooksIan/CyberSemanicLayer)](https://github.com/BrooksIan/CyberSemanicLayer/forks)
+[![Watchers](https://img.shields.io/github/watchers/BrooksIan/CyberSemanicLayer)](https://github.com/BrooksIan/CyberSemanicLayer/watchers)
+
 A semantic knowledge layer for cybersecurity posture. Ossie binds each question to the relationships that question means, and the browser compares that answer with a guessed walk over the same Neo4j graph. Cloudera Machine Learning hosts the install, the catalog job, and the application.
+
+![Cyber Semantic Layer cover: a question matches an Ossie binding, then a guessed walk and an Ossie path both run on Neo4j](images/cover.jpg)
 
 ## Table of Contents
 
