@@ -45,12 +45,25 @@ def project_root() -> Path:
     return start
 
 
+def _neo4j_importable() -> bool:
+    try:
+        import neo4j  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
 def main() -> None:
+    if _neo4j_importable():
+        print("neo4j is already installed.", flush=True)
+        return
     root = project_root()
     requirements = root / "requirements.txt"
+    if not requirements.is_file():
+        raise SystemExit(f"requirements.txt was not found at {requirements}")
     print(f"Python {sys.version}", flush=True)
     print(f"Installing {requirements}", flush=True)
-    command = [
+    base = [
         sys.executable,
         "-m",
         "pip",
@@ -59,13 +72,23 @@ def main() -> None:
         "-r",
         str(requirements),
     ]
-    print("+", " ".join(command), flush=True)
-    try:
-        subprocess.check_call(command)
-    except subprocess.CalledProcessError:
-        print("pip install failed; retrying with --user", flush=True)
-        subprocess.check_call([*command, "--user"])
-    print("Installed neo4j.", flush=True)
+    attempts = (
+        base,
+        [*base, "--user"],
+        [*base, "--break-system-packages"],
+    )
+    last_error: subprocess.CalledProcessError | None = None
+    for command in attempts:
+        print("+", " ".join(command), flush=True)
+        try:
+            subprocess.check_call(command)
+        except subprocess.CalledProcessError as exc:
+            last_error = exc
+            print(f"pip install failed with status {exc.returncode}", flush=True)
+            continue
+        print("Installed neo4j.", flush=True)
+        return
+    raise SystemExit("Could not install neo4j.") from last_error
 
 
 if __name__ == "__main__":

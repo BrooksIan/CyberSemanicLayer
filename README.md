@@ -87,7 +87,7 @@ Security data is easy to collect and hard to query with a stable meaning. A vari
 ## Quickstart
 
 1. Clone this repository.
-2. Create a virtual environment and install the Neo4j driver. The session script installs `requirements.txt`. The job and the application import the model from `src/`, so the session does not build the package.
+2. Create a virtual environment and install the Neo4j driver. The install job installs `requirements.txt`. The catalog job and the application import the model from `src/`, so this step does not build the package.
 
    ```bash
    python3 -m venv .venv
@@ -137,7 +137,7 @@ Component detail is in [docs/architecture.md](docs/architecture.md). The model i
 | Path | Description |
 | --- | --- |
 | `src/cyber_semantic_layer/` | Catalog model, sample data, JSON snapshot, Neo4j seed, and question bindings |
-| `0_session-install-dependencies/` | CML session that installs the Neo4j driver |
+| `0_session-install-dependencies/` | CML job that installs the Neo4j driver |
 | `1_job-build-catalog/` | CML job that writes the catalog snapshot and seeds Neo4j |
 | `2_app-browse-catalog/` | CML application that answers posture questions |
 | `assets/data/` | Generated catalog snapshot (`catalog.json`) |

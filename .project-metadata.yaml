@@ -52,15 +52,21 @@ runtimes:
     edition: Standard
 
 tasks:
-  - type: run_session
+  - type: create_job
     name: Install Dependencies
+    entity_label: install_dependencies
     script: 0_session-install-dependencies/install-dependencies.py
-    short_summary: Install the semantic layer package.
+    arguments: ""
     kernel: python3
     cpu: 1
     memory: 2
-    environment:
-      PYTHONUNBUFFERED: "1"
+    short_summary: Create the job that installs the Neo4j driver.
+    environment_variables:
+      TASK_TYPE: CREATE/RUN_JOB
+
+  - type: run_job
+    entity_label: install_dependencies
+    short_summary: Install the Neo4j driver.
 
   - type: create_job
     name: Build semantic catalog
