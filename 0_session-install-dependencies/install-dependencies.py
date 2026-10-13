@@ -21,9 +21,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def _run(command: list[str]) -> None:
+    print("+", " ".join(command), flush=True)
+    subprocess.check_call(command)
+
+
 def main() -> None:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip"])
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-e", str(ROOT)])
+    print(f"Python {sys.version}", flush=True)
+    pip = [sys.executable, "-m", "pip", "install", "--disable-pip-version-check"]
+    # The runtime dependency. The job and application also add src/ to the path.
+    _run([*pip, "neo4j>=5"])
+    _run([*pip, str(ROOT)])
 
 
 if __name__ == "__main__":
