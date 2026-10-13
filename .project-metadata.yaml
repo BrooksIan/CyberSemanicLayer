@@ -28,8 +28,8 @@ environment_variables:
     description: "Project-relative path where the catalog job writes the semantic layer snapshot."
     required: false
   NEO4J_URI:
-    default: "bolt://localhost:7687"
-    description: "Bolt URI for the Neo4j graph. The catalog job seeds the shadow-admin demo subgraph when this is set."
+    default: ""
+    description: "Bolt URI for Neo4j. Leave empty in CML. Set bolt://localhost:7687 when a Neo4j database is running."
     required: false
   NEO4J_USER:
     default: "neo4j"
@@ -66,11 +66,12 @@ tasks:
     name: Build semantic catalog
     entity_label: build_semantic_catalog
     script: 1_job-build-catalog/job.py
-    arguments: None
+    arguments: ""
+    kernel: python3
     cpu: 1
     memory: 2
     short_summary: Create the job that writes the catalog snapshot and seeds Neo4j.
-    environment:
+    environment_variables:
       TASK_TYPE: CREATE/RUN_JOB
 
   - type: run_job
@@ -85,6 +86,7 @@ tasks:
       the Neo4j graph seeded by the build job.
     subdomain: cyber-semantic-layer
     script: 2_app-browse-catalog/app.py
+    kernel: python3
     cpu: 1
     memory: 2
     environment_variables:

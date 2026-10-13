@@ -44,6 +44,9 @@ def test_catalog_json_round_trip(tmp_path: Path) -> None:
 
 def test_amp_scripts_exist() -> None:
     metadata = (ROOT / ".project-metadata.yaml").read_text(encoding="utf-8")
+    job = metadata.split("type: create_job", 1)[1].split("type: run_job", 1)[0]
+    assert "kernel: python3" in job
+    assert "arguments: None" not in job
     scripts = re.findall(r"(?m)^[ ]*script:\s+(\S+)\s*$", metadata)
     assert scripts
     for script in scripts:

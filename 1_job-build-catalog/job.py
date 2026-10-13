@@ -14,6 +14,7 @@
 
 """Write the sample semantic catalog and, when NEO4J_URI is set, seed Neo4j."""
 
+import os
 import sys
 import time
 from pathlib import Path
@@ -35,6 +36,8 @@ def seed_neo4j(attempts: int = 30, pause_seconds: float = 2) -> None:
     if not neo4j_enabled():
         print("NEO4J_URI is unset. Skipped Neo4j seed.")
         return
+    if not os.environ.get("NEO4J_REQUIRED"):
+        attempts = min(attempts, 3)
     last_error: Exception | None = None
     for attempt in range(1, attempts + 1):
         try:
@@ -49,7 +52,13 @@ def seed_neo4j(attempts: int = 30, pause_seconds: float = 2) -> None:
             last_error = exc
             print(f"waiting for Neo4j ({attempt}/{attempts}): {exc.__class__.__name__}")
             time.sleep(pause_seconds)
-    raise RuntimeError("Neo4j seed failed") from last_error
+    message = "Neo4j seed failed"
+    if os.environ.get("NEO4J_REQUIRED"):
+        raise RuntimeError(message) from last_error
+    print(
+        f"{message}. The catalog snapshot was still written. "
+        "In CML there is no Neo4j on localhost. Set NEO4J_REQUIRED=1 to make a missed seed fail the job."
+    )
 
 
 def main() -> None:

@@ -102,6 +102,7 @@ Security data is easy to collect and hard to query with a stable meaning. A vari
    ```bash
    export NEO4J_URI=bolt://localhost:7687
    export NEO4J_PASSWORD=cyber-semantic-layer
+   export NEO4J_REQUIRED=1
    docker compose -f deploy/docker-compose.yml up -d
    python3 1_job-build-catalog/job.py
    python3 2_app-browse-catalog/app.py

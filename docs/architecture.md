@@ -36,7 +36,8 @@ The posture table under the form runs the four default questions the same way.
 | Variable | Default | Used for |
 | --- | --- | --- |
 | `CATALOG_PATH` | `assets/data/catalog.json` | Snapshot path, relative to the repository root |
-| `NEO4J_URI` | unset in the app; `bolt://localhost:7687` in `run-local.sh` | Seed and queries. The app skips Neo4j when this is unset |
+| `NEO4J_URI` | empty in the AMP; `bolt://localhost:7687` in `run-local.sh` | Seed and queries. An empty value skips Neo4j. CML has no Neo4j on localhost, so the catalog job still succeeds if the seed cannot connect |
+| `NEO4J_REQUIRED` | unset in the AMP; `1` in `run-local.sh` | When set, a failed Neo4j seed fails the catalog job |
 | `NEO4J_USER` | `neo4j` | Bolt user |
 | `NEO4J_PASSWORD` | `cyber-semantic-layer` | Bolt password. Replace this outside the local demo |
 | `PORT` | | Local listen port |
