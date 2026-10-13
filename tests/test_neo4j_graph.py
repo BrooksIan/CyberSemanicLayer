@@ -12,7 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cyber_semantic_layer.neo4j_graph import QUESTIONS, SEED_STATEMENTS, match_question, prepare_question
+from cyber_semantic_layer.neo4j_graph import (
+    QUESTIONS,
+    SEED_STATEMENTS,
+    demo_result,
+    match_question,
+    prepare_question,
+)
 
 
 def test_each_question_has_two_cypher_forms() -> None:
@@ -58,3 +64,24 @@ def test_typed_questions_map_onto_the_model() -> None:
     assert "nobody" in missing.message
     assert match_question("MATCH (n) DETACH DELETE n") is None
     assert match_question("what is the weather") is None
+
+
+def test_demo_graph_answers_each_question_without_neo4j() -> None:
+    by_id = {question.id: question for question in QUESTIONS}
+    lateral = demo_result(by_id["lateral"])
+    assert lateral.without_names == ("contractor", "jdoe")
+    assert lateral.with_names == ("jdoe",)
+    assert ("contractor", "LOGON", "Workstation-01") in lateral.without_graph.edges
+    assert ("jdoe", "AUTHENTICATED_TO", "Workstation-01") in lateral.with_graph.edges
+    assert all(label == "AUTHENTICATED_TO" for _source, label, _target in lateral.with_graph.edges)
+
+    for question in QUESTIONS:
+        result = demo_result(question)
+        assert result.without_names == question.without_names
+        assert result.with_names == question.with_names
+
+    rebound = prepare_question("Which hosts can contractor reach?")
+    assert rebound.question is not None
+    contractor = demo_result(rebound.question)
+    assert contractor.without_names == ("Workstation-01",)
+    assert contractor.with_names == ()

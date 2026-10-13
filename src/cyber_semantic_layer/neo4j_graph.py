@@ -466,6 +466,190 @@ def run_posture(driver) -> list[PostureResult]:
     return results
 
 
+_Edge = tuple[str, str, str]
+_KINDS = {
+    "jdoe": "User",
+    "admin_user": "User",
+    "service_account_aws": "User",
+    "contractor": "User",
+    "break_glass": "User",
+    "Workstation-01": "Host",
+    "JumpServer-02": "Host",
+    "Prod-DB-01": "Host",
+    "Domain Admins": "Group",
+    "AWS-Admin-Role": "Group",
+    "PCI-Database": "CriticalAsset",
+    "CVE-2024-3094": "Vulnerability",
+}
+_EDGES: tuple[_Edge, ...] = (
+    ("jdoe", "AUTHENTICATED_TO", "Workstation-01"),
+    ("jdoe", "AUTHENTICATED_TO", "JumpServer-02"),
+    ("jdoe", "HAS_PERMISSION (ForceChangePassword)", "admin_user"),
+    ("admin_user", "MEMBER_OF", "Domain Admins"),
+    ("break_glass", "MEMBER_OF", "Domain Admins"),
+    ("break_glass", "AUTHENTICATED_TO", "Prod-DB-01"),
+    ("Domain Admins", "HAS_ACCESS_TO", "Prod-DB-01"),
+    ("service_account_aws", "MEMBER_OF", "AWS-Admin-Role"),
+    ("AWS-Admin-Role", "HAS_ACCESS_TO", "PCI-Database"),
+    ("Prod-DB-01", "HOSTS", "PCI-Database"),
+    ("contractor", "LOGON", "Workstation-01"),
+    ("CVE-2024-3094", "VULNERABILITY_ON_ASSET", "Prod-DB-01"),
+)
+
+
+def _steps(node: str, undirected: bool) -> list[tuple[str, _Edge]]:
+    steps: list[tuple[str, _Edge]] = []
+    for source, label, target in _EDGES:
+        if source == node:
+            steps.append((target, (source, label, target)))
+        elif undirected and target == node:
+            steps.append((source, (source, label, target)))
+    return steps
+
+
+def _walk(start: str, hops: int, undirected: bool, arrived) -> list[list[_Edge]]:
+    found: list[list[_Edge]] = []
+    queue: list[tuple[str, list[_Edge], set[str]]] = [(start, [], {start})]
+    while queue:
+        node, path, seen = queue.pop(0)
+        if path and arrived(node):
+            found.append(path)
+        if len(path) >= hops:
+            continue
+        for nxt, edge in _steps(node, undirected):
+            if nxt in seen:
+                continue
+            queue.append((nxt, [*path, edge], seen | {nxt}))
+    return found
+
+
+def _view(paths: list[list[_Edge]]) -> GraphView:
+    nodes: dict[str, str] = {}
+    edges: list[_Edge] = []
+    seen: set[_Edge] = set()
+    for path in paths:
+        for source, label, target in path:
+            nodes.setdefault(source, _KINDS[source])
+            nodes.setdefault(target, _KINDS[target])
+            edge = (source, label, target)
+            if edge not in seen:
+                seen.add(edge)
+                edges.append(edge)
+    return GraphView(
+        nodes=tuple((name, nodes[name]) for name in sorted(nodes)),
+        edges=tuple(edges),
+    )
+
+
+def _sorted_names(names: set[str]) -> tuple[str, ...]:
+    return tuple(sorted(names))
+
+
+def _shadow_with(user: str) -> list[list[_Edge]]:
+    paths: list[list[_Edge]] = []
+    for first in _steps(user, False):
+        _nxt, edge = first
+        if not edge[1].startswith("HAS_PERMISSION") or _KINDS.get(edge[2]) != "User":
+            continue
+        for _group, member in _steps(edge[2], False):
+            if member[1] != "MEMBER_OF":
+                continue
+            for host, access in _steps(member[2], False):
+                if access[1] == "HAS_ACCESS_TO" and _KINDS.get(host) == "Host":
+                    paths.append([edge, member, access])
+    for group, member in _steps(user, False):
+        if member[1] != "MEMBER_OF":
+            continue
+        for host, access in _steps(group, False):
+            if access[1] == "HAS_ACCESS_TO" and _KINDS.get(host) == "Host":
+                paths.append([member, access])
+    return paths
+
+
+def _lateral(types: set[str]) -> list[list[_Edge]]:
+    return [
+        [(source, label, target)]
+        for source, label, target in _EDGES
+        if target == "Workstation-01" and label in types and _KINDS.get(source) == "User"
+    ]
+
+
+def _pci_with() -> list[list[_Edge]]:
+    paths: list[list[_Edge]] = []
+    for user, kind in _KINDS.items():
+        if kind != "User":
+            continue
+        for group, member in _steps(user, False):
+            if member[1] != "MEMBER_OF":
+                continue
+            for asset, access in _steps(group, False):
+                if access[1] != "HAS_ACCESS_TO":
+                    continue
+                if asset == "PCI-Database":
+                    paths.append([member, access])
+                elif _KINDS.get(asset) == "Host":
+                    for hosted, hosts in _steps(asset, False):
+                        if hosts[1] == "HOSTS" and hosted == "PCI-Database":
+                            paths.append([member, access, hosts])
+    return paths
+
+
+def _members_without() -> list[tuple[str, list[_Edge]]]:
+    found: list[tuple[str, list[_Edge]]] = []
+    for user, kind in _KINDS.items():
+        if kind != "User":
+            continue
+        for path in _walk(user, 3, True, lambda node: node == "Domain Admins"):
+            found.append((user, path))
+    return found
+
+
+def demo_result(question: PostureQuestion) -> PostureResult:
+    """Answer a question from the seeded demo graph when Neo4j is not configured."""
+
+    subject = question.subject or "jdoe"
+    if question.id == "shadow":
+        without_paths = _walk(subject, 4, False, lambda node: _KINDS.get(node) == "Host")
+        with_paths = _shadow_with(subject)
+        without_names = _sorted_names({path[-1][2] for path in without_paths})
+        with_names = _sorted_names({path[-1][2] for path in with_paths})
+    elif question.id == "lateral":
+        without_paths = _lateral({"LOGON", "HAS_SESSION", "AUTHENTICATED_TO"})
+        with_paths = _lateral({"AUTHENTICATED_TO"})
+        without_names = _sorted_names({path[0][0] for path in without_paths})
+        with_names = _sorted_names({path[0][0] for path in with_paths})
+    elif question.id == "pci":
+        without_paths = []
+        for user, kind in _KINDS.items():
+            if kind == "User":
+                without_paths.extend(
+                    path
+                    for path in _walk(user, 4, False, lambda node: _KINDS.get(node) == "Host")
+                    if path[-1][2] == "PCI-Database"
+                )
+        with_paths = _pci_with()
+        without_names = _sorted_names({path[0][0] for path in without_paths})
+        with_names = _sorted_names({path[0][0] for path in with_paths})
+    else:
+        without_found = _members_without()
+        without_paths = [path for _user, path in without_found]
+        with_paths = [
+            [(user, "MEMBER_OF", "Domain Admins")]
+            for user, kind in _KINDS.items()
+            if kind == "User"
+            and (user, "MEMBER_OF", "Domain Admins") in _EDGES
+        ]
+        without_names = _sorted_names({user for user, _path in without_found})
+        with_names = _sorted_names({path[0][0] for path in with_paths})
+    return PostureResult(
+        question=question,
+        without_names=without_names,
+        with_names=with_names,
+        without_graph=_view(without_paths),
+        with_graph=_view(with_paths),
+    )
+
+
 def open_driver():
     from neo4j import GraphDatabase
 

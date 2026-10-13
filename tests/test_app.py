@@ -104,6 +104,17 @@ def test_graph_view_draws_the_returned_path() -> None:
     assert "No path returned." in page
 
 
+def test_unset_neo4j_draws_the_workstation_demo(monkeypatch) -> None:
+    monkeypatch.delenv("NEO4J_URI", raising=False)
+    question, result, status = APP.answer_question("Who is on Workstation-01?")
+    page = APP.render_answer("Who is on Workstation-01?", question, result, status)
+    assert "Showing the demo graph." in page
+    assert "contractor, jdoe" in page
+    assert "LOGON" in page
+    assert "AUTHENTICATED_TO" in page
+    assert page.count("No path returned.") == 0
+
+
 def test_render_hides_the_sample_catalog() -> None:
     page = APP.render_catalog(build_sample_catalog(), "sample notice")
     assert "web-01" not in page

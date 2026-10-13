@@ -435,7 +435,13 @@ def render_answer(submitted: str, question, result, status: str) -> str:
 
 
 def answer_question(text: str):
-    from cyber_semantic_layer.neo4j_graph import neo4j_config, open_driver, prepare_question, run_question
+    from cyber_semantic_layer.neo4j_graph import (
+        demo_result,
+        neo4j_config,
+        open_driver,
+        prepare_question,
+        run_question,
+    )
 
     prepared = prepare_question(text)
     question = prepared.question
@@ -443,7 +449,7 @@ def answer_question(text: str):
         return None, None, prepared.message or "No semantic-model query matches that question."
     uri, _user, _password = neo4j_config()
     if not os.environ.get("NEO4J_URI"):
-        return question, None, "NEO4J_URI is unset, so the Cypher was not run."
+        return question, demo_result(question), "NEO4J_URI is unset. Showing the demo graph."
     try:
         driver = open_driver()
     except Exception as exc:
@@ -490,11 +496,14 @@ def render_posture(rows, status: str) -> str:
 
 
 def load_posture() -> tuple[list | None, str]:
-    from cyber_semantic_layer.neo4j_graph import neo4j_config, open_driver, run_posture
+    from cyber_semantic_layer.neo4j_graph import QUESTIONS, demo_result, neo4j_config, open_driver, run_posture
 
     uri, _user, _password = neo4j_config()
     if not os.environ.get("NEO4J_URI"):
-        return None, "NEO4J_URI is unset. Start Neo4j with deploy/docker-compose.yml, then set NEO4J_URI=bolt://localhost:7687."
+        return (
+            [demo_result(question) for question in QUESTIONS],
+            "NEO4J_URI is unset. Showing the demo graph.",
+        )
     try:
         driver = open_driver()
     except Exception as exc:
