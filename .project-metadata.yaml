@@ -47,9 +47,6 @@ runtimes:
   - editor: Workbench
     kernel: Python 3.12
     edition: Standard
-  - editor: JupyterLab
-    kernel: Python 3.11
-    edition: Standard
 
 tasks:
   - type: run_session
@@ -58,7 +55,7 @@ tasks:
     short_summary: Install the semantic layer package.
     kernel: python3
     cpu: 1
-    memory: 4
+    memory: 2
     environment:
       PYTHONUNBUFFERED: "1"
 

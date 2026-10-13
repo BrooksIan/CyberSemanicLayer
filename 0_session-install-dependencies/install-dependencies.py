@@ -12,26 +12,55 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Install this project into the active Python environment."""
+"""Install the runtime dependency into the active Python environment.
 
+The job and the application add src/ to the import path, so this session
+does not build the project package. Building it inside a Cloudera session
+fails the engine.
+"""
+
+import os
 import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
 
-
-def _run(command: list[str]) -> None:
-    print("+", " ".join(command), flush=True)
-    subprocess.check_call(command)
+def project_root() -> Path:
+    for key in ("CDSW_PROJECT_DIR", "ML_PROJECT_DIR"):
+        value = os.environ.get(key)
+        if value:
+            return Path(value)
+    cwd = Path.cwd()
+    if (cwd / "pyproject.toml").is_file():
+        return cwd
+    here = Path(__file__).resolve()
+    for candidate in here.parents:
+        if (candidate / "pyproject.toml").is_file():
+            return candidate
+    return cwd
 
 
 def main() -> None:
+    root = project_root()
+    requirements = root / "requirements.txt"
     print(f"Python {sys.version}", flush=True)
-    pip = [sys.executable, "-m", "pip", "install", "--disable-pip-version-check"]
-    # The runtime dependency. The job and application also add src/ to the path.
-    _run([*pip, "neo4j>=5"])
-    _run([*pip, str(ROOT)])
+    print(f"Installing {requirements}", flush=True)
+    command = [
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "--disable-pip-version-check",
+        "-r",
+        str(requirements),
+    ]
+    print("+", " ".join(command), flush=True)
+    try:
+        subprocess.check_call(command)
+    except subprocess.CalledProcessError:
+        print("pip install failed; retrying with --user", flush=True)
+        subprocess.check_call([*command, "--user"])
+    print("Installed neo4j.", flush=True)
 
 
 if __name__ == "__main__":
