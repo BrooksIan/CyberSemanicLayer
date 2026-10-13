@@ -1,2 +1,2 @@
-# Runtime dependencies are declared in pyproject.toml.
-# install-dependencies.py installs the local package from the repository root.
+# The session script installs the repository-root requirements.txt.
+# It does not build this project package.

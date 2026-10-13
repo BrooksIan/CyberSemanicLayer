@@ -2,32 +2,26 @@
 
 Cloudera Machine Learning is the launch target. Neo4j holds the posture graph. The semantic model that binds questions to that graph is described in [Semantic knowledge layer](semantic-knowledge-layer.md).
 
-```text
-0_session-install-dependencies
-        |
-        v
-1_job-build-catalog
-        |
-        +--> assets/data/catalog.json
-        |
-        +--> Neo4j  (shadow-admin subgraph)
-                    |
-                    v
-             2_app-browse-catalog
-             match question -> guessed walk and Ossie path
+```mermaid
+flowchart TD
+  session["0_session-install-dependencies"] --> job["1_job-build-catalog"]
+  job --> snapshot["assets/data/catalog.json"]
+  job --> neo4j[("Neo4j shadow-admin")]
+  neo4j --> app["2_app-browse-catalog"]
 ```
 
 | Piece | Role |
 | --- | --- |
 | `src/cyber_semantic_layer` | Catalog model, sample catalog, JSON snapshot, Neo4j seed, and question bindings |
-| `0_session-install-dependencies` | Installs the package into the CML session |
-| `1_job-build-catalog` | Writes the catalog snapshot and, when `NEO4J_URI` is set, seeds Neo4j |
-| `2_app-browse-catalog` | Serves the question form and the posture comparison |
+| `0_session-install-dependencies` | Installs the Neo4j driver from `requirements.txt`. The session does not build the project package |
+| `1_job-build-catalog` | Writes the catalog snapshot and, when `NEO4J_URI` is set, seeds Neo4j. Imports the model from `src/` |
+| `2_app-browse-catalog` | Serves the question form and the posture comparison. Imports the model from `src/` |
 | `deploy/docker-compose.yml` | Local Neo4j 5. Browser on port 7474, Bolt on port 7687 |
 | `deploy/run-local.sh` | Starts Neo4j, runs the job, then serves the application |
-| `.project-metadata.yaml` | CML runbook that orders the session, job, and application |
+| `.project-metadata.yaml` | CML runbook. PBJ Workbench on Python 3.12 or 3.13, and JupyterLab on Python 3.12, Standard edition |
 | `METADATA.yaml` | Fields for the Cloudera blueprint website |
 | `catalog-entry.yaml` | Entry for a custom CML AMP catalog |
+| `images/` | Cover image and the example screenshots in the README |
 
 ## Request path
 

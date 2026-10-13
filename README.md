@@ -1,7 +1,7 @@
 # Cloudera Blueprint: Cyber Semantic Layer
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB)](https://www.python.org/downloads/)
 [![Stars](https://img.shields.io/github/stars/BrooksIan/CyberSemanicLayer)](https://github.com/BrooksIan/CyberSemanicLayer/stargazers)
 [![Forks](https://img.shields.io/github/forks/BrooksIan/CyberSemanicLayer)](https://github.com/BrooksIan/CyberSemanicLayer/forks)
 [![Watchers](https://img.shields.io/github/watchers/BrooksIan/CyberSemanicLayer)](https://github.com/BrooksIan/CyberSemanicLayer/watchers)
@@ -87,13 +87,15 @@ Security data is easy to collect and hard to query with a stable meaning. A vari
 ## Quickstart
 
 1. Clone this repository.
-2. Create a virtual environment and install the package:
+2. Create a virtual environment and install the Neo4j driver. The session script installs `requirements.txt`. The job and the application import the model from `src/`, so the session does not build the package.
 
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate
    python3 0_session-install-dependencies/install-dependencies.py
    ```
+
+   To run the tests, install the package as well: `pip install -e ".[dev]"`.
 
 3. Start Neo4j, seed the demo graph, and open the browser:
 
@@ -107,7 +109,7 @@ Security data is easy to collect and hard to query with a stable meaning. A vari
 
    Then open `http://127.0.0.1:8080`. Neo4j Browser is at `http://127.0.0.1:7474` (user `neo4j`, password `cyber-semantic-layer`). `deploy/run-local.sh` starts Neo4j, seeds it, and serves the app.
 
-4. To launch it from the CML AMP catalog, set `git_url` in [`catalog-entry.yaml`](catalog-entry.yaml) to a clone URL that CML can reach, then add that file as a catalog source. Site Administration steps are in the [CML community AMP template](https://github.com/cloudera/CML_Community_AMP_Template).
+4. To launch it from the CML AMP catalog, add [`catalog-entry.yaml`](catalog-entry.yaml) as a catalog source. Its `git_url` already points at this repository. Site Administration steps are in the [CML community AMP template](https://github.com/cloudera/CML_Community_AMP_Template).
 
 ## Architecture
 
@@ -134,12 +136,14 @@ Component detail is in [docs/architecture.md](docs/architecture.md). The model i
 | Path | Description |
 | --- | --- |
 | `src/cyber_semantic_layer/` | Catalog model, sample data, JSON snapshot, Neo4j seed, and question bindings |
-| `0_session-install-dependencies/` | CML session that installs the package |
+| `0_session-install-dependencies/` | CML session that installs the Neo4j driver |
 | `1_job-build-catalog/` | CML job that writes the catalog snapshot and seeds Neo4j |
 | `2_app-browse-catalog/` | CML application that answers posture questions |
 | `assets/data/` | Generated catalog snapshot (`catalog.json`) |
 | `deploy/docker-compose.yml` | Local Neo4j 5 |
 | `deploy/run-local.sh` | Start Neo4j, seed it, then serve the app |
+| `images/` | Cover image and example screenshots used in this README |
+| `requirements.txt` | Neo4j driver installed by the CML session |
 | `docs/semantic-knowledge-layer.md` | Ossie bindings, demo graph, and the four questions |
 | `docs/architecture.md` | Runtime pieces, request path, and configuration |
 | `METADATA.yaml` | Catalog metadata for the Cloudera blueprint website |
@@ -149,9 +153,9 @@ Component detail is in [docs/architecture.md](docs/architecture.md). The model i
 
 ## Prerequisites
 
-- Python 3.11 or newer, git, pip, and Docker for the local Neo4j graph
-- A Cloudera Machine Learning workspace with a Workbench runtime on Python 3.11, Standard edition, when launching the AMP
-- Before publishing: `maintainer_name` and `public_github_link` in `METADATA.yaml`, and `git_url` in `catalog-entry.yaml`
+- Python 3.12 or newer, git, pip, and Docker for the local Neo4j graph
+- A Cloudera Machine Learning workspace with a PBJ Workbench runtime on Python 3.12 or 3.13, or JupyterLab on Python 3.12, Standard edition, when launching the AMP
+- Before publishing: `public_github_link` and `reprise_link` in `METADATA.yaml`
 
 `CATALOG_PATH` defaults to `assets/data/catalog.json`. The local Neo4j password is `cyber-semantic-layer`. Set `NEO4J_URI` to seed the graph and to run the posture queries. Variable defaults are listed in [docs/architecture.md](docs/architecture.md).
 

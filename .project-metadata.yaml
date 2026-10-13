@@ -41,10 +41,13 @@ environment_variables:
     required: false
 
 runtimes:
-  - editor: Workbench
-    kernel: Python 3.11
+  - editor: PBJ Workbench
+    kernel: Python 3.12
     edition: Standard
-  - editor: Workbench
+  - editor: PBJ Workbench
+    kernel: Python 3.13
+    edition: Standard
+  - editor: JupyterLab
     kernel: Python 3.12
     edition: Standard
 
