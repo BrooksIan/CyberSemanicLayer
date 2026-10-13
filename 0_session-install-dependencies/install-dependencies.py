@@ -26,18 +26,23 @@ from pathlib import Path
 
 
 def project_root() -> Path:
+    """Find the repository root when CML runs this file inside a session."""
+
     for key in ("CDSW_PROJECT_DIR", "ML_PROJECT_DIR"):
         value = os.environ.get(key)
         if value:
             return Path(value)
-    cwd = Path.cwd()
-    if (cwd / "pyproject.toml").is_file():
-        return cwd
-    here = Path(__file__).resolve()
-    for candidate in here.parents:
+    start = Path.cwd()
+    for candidate in (start, *start.parents):
         if (candidate / "pyproject.toml").is_file():
             return candidate
-    return cwd
+    file_name = globals().get("__file__")
+    if file_name:
+        here = Path(file_name).resolve()
+        for candidate in here.parents:
+            if (candidate / "pyproject.toml").is_file():
+                return candidate
+    return start
 
 
 def main() -> None:

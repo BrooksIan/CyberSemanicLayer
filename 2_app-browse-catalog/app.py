@@ -21,7 +21,28 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+
+def project_root() -> Path:
+    """Find the repository root when CML runs this file inside a session."""
+
+    for key in ("CDSW_PROJECT_DIR", "ML_PROJECT_DIR"):
+        value = os.environ.get(key)
+        if value:
+            return Path(value)
+    start = Path.cwd()
+    for candidate in (start, *start.parents):
+        if (candidate / "pyproject.toml").is_file():
+            return candidate
+    file_name = globals().get("__file__")
+    if file_name:
+        here = Path(file_name).resolve()
+        for candidate in here.parents:
+            if (candidate / "pyproject.toml").is_file():
+                return candidate
+    return start
+
+
+ROOT = project_root()
 sys.path.insert(0, str(ROOT / "src"))
 
 from cyber_semantic_layer.catalog import SemanticCatalog

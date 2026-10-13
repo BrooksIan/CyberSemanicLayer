@@ -14,7 +14,7 @@ flowchart TD
 | --- | --- |
 | `src/cyber_semantic_layer` | Catalog model, sample catalog, JSON snapshot, Neo4j seed, and question bindings |
 | `0_session-install-dependencies` | Installs the Neo4j driver from `requirements.txt`. The session does not build the project package |
-| `1_job-build-catalog` | Writes the catalog snapshot and, when `NEO4J_URI` is set, seeds Neo4j. Imports the model from `src/` |
+| `1_job-build-catalog` | Writes the catalog snapshot and, when `NEO4J_URI` is set, seeds Neo4j. Imports the model from `src/`. A CML session does not set `__file__`, so the script finds the project from `CDSW_PROJECT_DIR` or `ML_PROJECT_DIR` |
 | `2_app-browse-catalog` | Serves the question form and the posture comparison. Imports the model from `src/` |
 | `deploy/docker-compose.yml` | Local Neo4j 5. Browser on port 7474, Bolt on port 7687 |
 | `deploy/run-local.sh` | Starts Neo4j, runs the job, then serves the application |
